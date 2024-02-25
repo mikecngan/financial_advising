@@ -1,0 +1,107 @@
+{
+    "inflation_rate": 0.025,
+    "expenditure": [
+        {
+            "name": "pre-tax expenses",
+            "monthly_cost": 950,
+            "inflation_rate": 0.03,
+            "final_year": 2150
+        },
+        {
+            "name": "housing",
+            "monthly_cost": 4100,
+            "inflation_rate": 0.0,
+            "final_year": 2050
+        },
+        {
+            "name": "everything else",
+            "monthly_cost": 4000,
+            "inflation_rate": 0.03,
+            "final_year": 2150
+        }
+    ],
+    "accounts": [
+        {
+            "name": "Cash and Treasuries",
+            "type": "Cash",
+            "growth_rate": 0.03,
+            "amount": 200000
+        },
+        {
+            "name": "Investment Total",
+            "type": "Investment",
+            "growth_rate": 0.06,
+            "amount": 350000
+        },
+        {
+            "name": "Tax-Deferred Total",
+            "type": "Tax-Deferred",
+            "growth_rate": 0.06,
+            "amount": 350000
+        },
+        {
+            "name": "Tax-Exempt Total",
+            "type": "Tax-Exempt",
+            "growth_rate": 0.06,
+            "amount": 200000
+        },
+        {
+            "name": "529",
+            "type": "529",
+            "growth_rate": 0.06,
+            "amount": 50000,
+            "contribution": 10000,
+            "contribution_end_year": 2040
+        }
+    ],
+    "family_members": [
+        {
+            "name": "Mike",
+            "age": 38
+        },
+        {
+            "name": "Dana",
+            "age": 39,
+            "retirement_age": 59
+        },
+        {
+            "name": "Verity",
+            "age": 9,
+            "retirement_age": 65
+        },
+        {
+            "name": "Martin",
+            "age": 7,
+            "retirement_age": 65
+        },
+        {
+            "name": "Rozzy",
+            "age": 2,
+            "retirement_age": 65
+        }
+    ],
+    "income_sources":
+    [
+        {
+            "name": "Job",
+            "family_member": "Mike",
+            "income": 200000,
+            "annual_income_growth": 0.03,
+            "end_age": 59,
+            "401-k_matching": 0.035
+        },
+        {
+            "name": "Rent",
+            "family_member": "Mike",
+            "income": 22800,
+            "annual_income_growth": 0.03
+        },
+        {
+            "name": "Social Security",
+            "family_member": "Mike",
+            "income": 100000,
+            "annual_income_growth": 0.03,
+            "start_age": 67
+        }
+    ]
+}
