@@ -52,7 +52,15 @@ df_taxes = pd.DataFrame()
 withdraw_penalty = 0
 cap_gains = 0
 interest = 0
-cost_basis = df_accounts[df_accounts['type'] == 'Investment']['basis'].values[0]
+
+cost_basis = []
+# grab all cost_basis from investment type df_accounts
+for i in range(len(df_accounts)):
+    if df_accounts.loc[i, 'type'] == 'Investment':
+        cost_basis.append(df_accounts.loc[i, 'basis'])
+
+print("cost_basis", cost_basis)
+
 income_from_retirement_accounts = 0
 
 # Simulate the growth of the accounts year by year until simulation_end_date
@@ -77,6 +85,7 @@ while year <= simulation_end_date:
 
     # Subtract the estimated taxes from the gross income
     net_income = gross_income - estimated_federal_taxes - estimated_state_taxes - df_expenditure.loc[df_expenditure['name'] == 'pre-tax expenses', 'annual_cost'].values[0] - tdt_contribution
+    #print('Net Income:', net_income)
 
     #store income and taxes
     new_row = pd.DataFrame({
@@ -88,10 +97,11 @@ while year <= simulation_end_date:
         'withdraw_penalty': [withdraw_penalty],
         'cap_gains': [cap_gains],
         'interest': [interest],
-        'cost_basis': [cost_basis],
+        #'cost_basis': [cost_basis],
         'tdt_contribution': [tdt_contribution],
         'year': [year]
     })
+    
     df_taxes = pd.concat([df_taxes, new_row], ignore_index=True)
 
     #taxes paid, reset for next year
@@ -107,8 +117,6 @@ while year <= simulation_end_date:
 
     # Get paid
     df_accounts.loc[df_accounts['type'] == 'Cash', 'amount'] += net_income
-
-
 
     # Contribute to 529 and 401k
     if 'contribution_end_year' in df_accounts.columns:
@@ -196,7 +204,9 @@ while year <= simulation_end_date:
     #If there isn't enough cash, then take money from Investment account, then from Tax-Exempt account, then finally from Tax-Deferred account
     if df_accounts.loc[cash_index, 'amount'] < 0:
         # Find the accounts
-        account_investment_index = df_accounts[df_accounts['type'] == 'Investment'].index[0]
+        account_investment_indices = df_accounts[df_accounts['type'] == 'Investment'].index
+#        for i in range(len(account_investment_indices)):
+#            print("i", account_investment_indices[i])
         account_tax_exempt_index = df_accounts[df_accounts['type'] == 'Tax-Exempt'].index[0]
         account_tax_deferred_index = df_accounts[df_accounts['type'] == 'Tax-Deferred'].index[0]
 
@@ -207,13 +217,17 @@ while year <= simulation_end_date:
             shortage = abs(df_accounts.loc[cash_index, 'amount']) #how much are we short
             df_accounts.loc[cash_index, 'amount'] = 0 #set the cash account to 0
 
-            if shortage > df_accounts.loc[account_investment_index, 'amount']: #if there isn't enough in the investment account
+            total_investment_amount = 0
+            for i in range(len(account_investment_indices)):
+                total_investment_amount += df_accounts.loc[account_investment_indices[i], 'amount']
+
+            if shortage >= total_investment_amount: #if there isn't enough in the investment account
+                for i in range(len(account_investment_indices)):
+                    cap_gains += df_accounts.loc[account_investment_indices[i], 'amount'] - cost_basis[i] #cap gains is then just the amount of the investment account minus the cost basis
+                    cost_basis[i] = 0 #cost basis is now 0 cause investment account is zero 
+                    df_accounts.loc[account_investment_indices[i], 'amount'] = 0 #empty the investment account
                 
-                cap_gains = df_accounts.loc[account_investment_index, 'amount'] - cost_basis #cap gains is then just the amount of the investment account minus the cost basis
-                cost_basis = 0 #cost basis is now 0 cause investment account is zero 
-                
-                df_accounts.loc[account_investment_index, 'amount'] = 0 #empty the investment account
-                shortage -= df_accounts.loc[account_investment_index, 'amount'] #this is how much we still need
+                shortage -= total_investment_amount #this is how much we still need
 
                 if shortage > df_accounts.loc[account_tax_exempt_index, 'amount']: #if there isn't enough in the tax-exempt account either
                     df_accounts.loc[account_tax_exempt_index, 'amount'] = 0 #empty the tax-exempt account
@@ -237,13 +251,21 @@ while year <= simulation_end_date:
                     if df_family['age'].max() < 59.5:
                         withdraw_penalty = shortage * 0.1
                     df_accounts.loc[account_tax_exempt_index, 'amount'] -= shortage
-            else: #there is enough in the investment account
-                cap_gains = shortage * (1 - cost_basis / df_accounts.loc[account_investment_index, 'amount'])
-                cost_basis *= (1 - shortage / df_accounts.loc[account_investment_index, 'amount'])
-                print("Cap Gains", cap_gains)
-                print("Cost Basis", cost_basis)
-                df_accounts.loc[account_investment_index, 'amount'] -= shortage
 
+            else: #there is enough in the combined investment account
+                for i in range(len(account_investment_indices)):
+                    if shortage < df_accounts.loc[account_investment_indices[i], 'amount']: #if there is enough in this account
+                        df_accounts.loc[account_investment_indices[i], 'amount'] -= shortage
+                        cap_gains += shortage * (1 - cost_basis[i] / df_accounts.loc[account_investment_indices[i], 'amount'])
+                        cost_basis[i] *= (1 - shortage / df_accounts.loc[account_investment_indices[i], 'amount'])
+                        break
+                    else:
+                        cap_gains += df_accounts.loc[account_investment_indices[i], 'amount'] - cost_basis[i]
+                        cost_basis[i] = 0
+                        df_accounts.loc[account_investment_indices[i], 'amount'] = 0
+                        shortage -= df_accounts.loc[account_investment_indices[i], 'amount']
+
+                    
 
 
     #INFLATION ADJUSTMENTS FOR ALL VALUES
@@ -310,7 +332,7 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 df_balance_history['amount'] = df_balance_history['amount'].apply(lambda x: '${:,.2f}'.format(x))
 
 df_reformatted = df_balance_history.pivot(index='year', columns='name', values='amount')
-print(df_reformatted)
+#print(df_reformatted)
 df_reformatted.to_csv(json_file + '_balance_history.csv')
 
 df_college_cost_history_grouped = df_college_cost_history.groupby('year')['cost_of_college'].sum().reset_index()
@@ -325,7 +347,6 @@ df_merged = df_expenditure_history.merge(df_college_cost_history_grouped, left_i
 
 df_taxes.set_index('year', inplace=True)
 df_merged = df_merged.merge(df_taxes, left_index=True, right_index=True, how='outer')
-
 
 # Print the merged DataFrame
 df_merged = df_merged.fillna(0).applymap(lambda x: '${:,.2f}'.format(x) if x != 0 else '$0.00')

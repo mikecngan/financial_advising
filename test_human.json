@@ -24,7 +24,7 @@
         },
         {
             "name": "everything else",
-            "monthly_cost": 6000,
+            "monthly_cost": 6500,
             "inflation_rate": 0.03,
             "start_year": 2024,
             "final_year": 2150
@@ -50,6 +50,13 @@
             "growth_rate": 0.06,
             "amount": 350000,
             "basis": 300000
+        },        
+        {
+            "name": "Crypto",
+            "type": "Investment",
+            "growth_rate": 0.06,
+            "amount": 45000,
+            "basis": 40000
         },
         {
             "name": "Tax-Deferred Total",
