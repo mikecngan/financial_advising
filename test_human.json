@@ -5,19 +5,36 @@
             "name": "pre-tax expenses",
             "monthly_cost": 950,
             "inflation_rate": 0.03,
+            "start_year": 2024,
             "final_year": 2150
         },
         {
             "name": "housing",
-            "monthly_cost": 4100,
+            "monthly_cost": 2000,
             "inflation_rate": 0.0,
+            "start_year": 2024,
             "final_year": 2050
         },
         {
-            "name": "everything else",
-            "monthly_cost": 4000,
-            "inflation_rate": 0.03,
+            "name": "property tax",
+            "monthly_cost": 1600,
+            "inflation_rate": 0.025,
+            "start_year": 2024,
             "final_year": 2150
+        },
+        {
+            "name": "everything else",
+            "monthly_cost": 6000,
+            "inflation_rate": 0.03,
+            "start_year": 2024,
+            "final_year": 2150
+        },
+        {
+            "name": "roof",
+            "monthly_cost": 3000,
+            "inflation_rate": 0,
+            "start_year": 2025,
+            "final_year": 2025
         }
     ],
     "accounts": [

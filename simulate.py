@@ -27,7 +27,6 @@ year = current_year
 # Inflation rate used
 inflation_rate = data['inflation_rate']
 
-
 # Convert the stuff to a DataFrames
 df_accounts = pd.DataFrame(data['accounts'])
 print(df_accounts)
@@ -47,7 +46,6 @@ print(df_expenditure)
 df_balance_history = pd.DataFrame()
 df_expenditure_history = pd.DataFrame()
 df_college_cost_history = pd.DataFrame()
-
 
 # Withdraw penalty
 withdraw_penalty = 0
@@ -101,7 +99,7 @@ while year <= simulation_end_date:
 
             # Increase the contribution amount by the inflation rate
             df_accounts.loc[account_529_index, 'contribution'] *= (1 + inflation_rate)
-            print('529 contribution:', year, contribution_amount)
+            #print('529 contribution:', year, contribution_amount)
 
 
     #401k contributions
@@ -126,9 +124,15 @@ while year <= simulation_end_date:
 
     for i in range(len(df_expenditure)):
         # Subtract the annual cost from the cash account for each expenditure except pre-tax expenses which haven't gotten to the final_year yet
-        if df_expenditure.loc[i, 'name'] != 'pre-tax expenses' and year <= df_expenditure.loc[i, 'final_year']:
+        if df_expenditure.loc[i, 'name'] != 'pre-tax expenses' and year <= df_expenditure.loc[i, 'final_year'] and year >= df_expenditure.loc[i, 'start_year']:
             total_expenditure += df_expenditure.loc[i, 'annual_cost']
-                
+            new_row = pd.DataFrame({
+                'name': [df_expenditure.loc[i, 'name']],
+                'annual_cost': [df_expenditure.loc[i, 'annual_cost']],
+                'year': [year]
+            })
+            df_expenditure_history = pd.concat([df_expenditure_history, new_row], ignore_index=True)
+
     df_accounts.loc[cash_index, 'amount'] -= total_expenditure
     #print('Total Expenditure:', total_expenditure)
 
@@ -145,8 +149,8 @@ while year <= simulation_end_date:
 
         # Check if the age is between 18 and 21
         if 18 <= age <= 21:
-            print("College age:", age)
-            print(df_accounts.loc[account_529_index, 'amount'])
+            #print("College age:", age)
+            #print(df_accounts.loc[account_529_index, 'amount'])
             # Subtract the cost of college from the 529 account
             if df_accounts.loc[account_529_index, 'amount'] >= cost_of_college:
                 df_accounts.loc[account_529_index, 'amount'] -= cost_of_college
@@ -155,6 +159,9 @@ while year <= simulation_end_date:
                 remaining_cost = cost_of_college - df_accounts.loc[account_529_index, 'amount']
                 df_accounts.loc[account_529_index, 'amount'] = 0
                 df_accounts.loc[cash_index, 'amount'] -= remaining_cost
+            
+            df_college_cost_history = pd.concat([df_college_cost_history, pd.DataFrame({'cost_of_college': [cost_of_college], 'year': [year]})], ignore_index=True)
+
 
 
 
@@ -222,8 +229,6 @@ while year <= simulation_end_date:
 
     # Store the balance of each account for this year
     df_balance_history = pd.concat([df_balance_history, df_accounts[['name', 'amount']].assign(year=year)], ignore_index=True)
-    df_expenditure_history = pd.concat([df_expenditure_history, df_expenditure[['name', 'annual_cost']].assign(year=year)], ignore_index=True)
-    df_college_cost_history = pd.concat([df_college_cost_history, pd.DataFrame({'cost_of_college': [cost_of_college], 'year': [year]})], ignore_index=True)
 
     # Update the year
     year += 1
@@ -240,12 +245,15 @@ for name in names:
     df_name = df_balance_history[df_balance_history['name'] == name]
     
     # Plot this name
-    plt.scatter(df_name['year'], df_name['amount'], label=name)
+    plt.plot(df_name['year'], df_name['amount'], label=name)
 
 # Add labels and title
 plt.xlabel('Year')
 plt.ylabel('Amount')
 plt.title('Balance History Over Time')
+
+# Set y-axis limit
+plt.ylim(-1000000, 5000000) #If we have more than $5,000,000, then we don't have to show it.
 
 # Add a legend
 plt.legend()
@@ -259,12 +267,20 @@ df_balance_history['amount'] = df_balance_history['amount'].apply(lambda x: '${:
 
 df_reformatted = df_balance_history.pivot(index='year', columns='name', values='amount')
 print(df_reformatted)
+df_reformatted.to_csv(json_file + '_balance_history.csv')
+
+df_college_cost_history_grouped = df_college_cost_history.groupby('year')['cost_of_college'].sum().reset_index()
+df_college_cost_history_grouped.set_index('year', inplace=True)
+#print(df_college_cost_history_grouped)
+
+print(df_expenditure_history)
+df_expenditure_history = df_expenditure_history.pivot(index='year', columns='name', values='annual_cost')
+print(df_expenditure_history)
 
 # Merge the DataFrames
-df_history = pd.merge(df_expenditure_history, df_college_cost_history, on='year', how='outer')
+df_merged = df_expenditure_history.merge(df_college_cost_history_grouped, left_index=True, right_index=True, how='outer')
 
-# Pivot the DataFrame
-df_history_pivot = df_history.pivot(index='year', columns='name', values='annual_cost')
-
-# Print the pivoted DataFrame
-print(df_history_pivot)
+# Print the merged DataFrame
+df_merged = df_merged.fillna(0).applymap(lambda x: '${:,.2f}'.format(x) if x != 0 else '$0.00')
+print(df_merged)
+df_merged.to_csv(json_file + '_expense_history.csv')
