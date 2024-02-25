@@ -237,14 +237,11 @@ while year <= simulation_end_date:
 names = df_balance_history['name'].unique()
 
 # Create a new figure
-plt.figure()
+plt.figure(figsize=(10, 6))
 
-# Loop over each name
+# Plot the data
 for name in names:
-    # Select rows for this name
     df_name = df_balance_history[df_balance_history['name'] == name]
-    
-    # Plot this name
     plt.plot(df_name['year'], df_name['amount'], label=name)
 
 # Add labels and title
@@ -253,10 +250,12 @@ plt.ylabel('Amount')
 plt.title('Balance History Over Time')
 
 # Set y-axis limit
-plt.ylim(-1000000, 5000000) #If we have more than $5,000,000, then we don't have to show it.
+plt.ylim(-5000, 5000000) #If we have more than $5,000,000, then we don't have to show it.
 
 # Add a legend
 plt.legend()
+
+plt.savefig(json_file + 'plot.png')
 
 # Show the plot
 plt.show()
