@@ -255,7 +255,7 @@ plt.ylim(-5000, 5000000) #If we have more than $5,000,000, then we don't have to
 # Add a legend
 plt.legend()
 
-plt.savefig(json_file + 'plot.png')
+plt.savefig(json_file + '_plot.png')
 
 # Show the plot
 plt.show()
