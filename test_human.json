@@ -48,7 +48,8 @@
             "name": "Investment Total",
             "type": "Investment",
             "growth_rate": 0.06,
-            "amount": 350000
+            "amount": 350000,
+            "basis": 300000
         },
         {
             "name": "Tax-Deferred Total",
@@ -104,7 +105,7 @@
             "family_member": "Mike",
             "income": 200000,
             "annual_income_growth": 0.03,
-            "end_age": 59,
+            "end_age": 50,
             "401-k_matching": 0.035
         },
         {
