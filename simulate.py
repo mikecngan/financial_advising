@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 tdt_contribution_limit = 23000
 cost_of_college = 42162
 
-json_file = 'test_human'
+json_file = 'katelou'
 # Read the JSON file
 with open(json_file + '.json', 'r') as f:
     data = json.load(f)

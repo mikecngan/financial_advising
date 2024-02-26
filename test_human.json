@@ -86,23 +86,19 @@
         },
         {
             "name": "Dana",
-            "age": 39,
-            "retirement_age": 59
+            "age": 39
         },
         {
             "name": "Verity",
-            "age": 9,
-            "retirement_age": 65
+            "age": 9
         },
         {
             "name": "Martin",
-            "age": 7,
-            "retirement_age": 65
+            "age": 7
         },
         {
             "name": "Rozzy",
-            "age": 2,
-            "retirement_age": 65
+            "age": 2
         }
     ],
     "income_sources":
