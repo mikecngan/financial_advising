@@ -3,12 +3,16 @@ from datetime import datetime
 import pandas as pd
 from tax import estimate_federal_taxes, estimate_state_taxes
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set the style of the plot
+sns.set_style("whitegrid")
 
 #tax-deferred contribution limit (aka 401k contribution limits)
 tdt_contribution_limit = 23000
 cost_of_college = 42162
 
-json_file = 'katelou'
+json_file = 'test_human'
 # Read the JSON file
 with open(json_file + '.json', 'r') as f:
     data = json.load(f)
@@ -26,6 +30,12 @@ year = current_year
 
 # Inflation rate used
 inflation_rate = data['inflation_rate']
+retirement = []
+for i in range(len(data['income_sources'])):
+    end_age = data['income_sources'][i].get('end_age')
+    if end_age is not None:
+        family_member_index = [j for j, member in enumerate(data['family_members']) if member['name'] == data['income_sources'][i]['family_member']][0]
+        retirement.append(end_age - data['family_members'][family_member_index]['age'] + year)
 
 # Convert the stuff to a DataFrames
 df_accounts = pd.DataFrame(data['accounts'])
@@ -310,6 +320,14 @@ plt.figure(figsize=(10, 6))
 for name in names:
     df_name = df_balance_history[df_balance_history['name'] == name]
     plt.plot(df_name['year'], df_name['amount'], label=name)
+
+# Draw vertical lines at retirement years
+for year in retirement:
+    plt.axvline(x=year, color='r', linestyle='--')
+    plt.text(year, plt.gca().get_ylim()[1], 'Retirement', rotation=90, verticalalignment='top')
+
+# Add gridlines
+plt.grid(True)
 
 # Add labels and title
 plt.xlabel('Year')
