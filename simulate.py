@@ -4,15 +4,16 @@ import pandas as pd
 from tax import estimate_federal_taxes, estimate_state_taxes
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 # Set the style of the plot
 sns.set_style("whitegrid")
 
 #tax-deferred contribution limit (aka 401k contribution limits)
-tdt_contribution_limit = 23000
+tdt_contribution_limit = 11700
 cost_of_college = 42162
 
-json_file = 'test_human'
+json_file = 'katelou'
 # Read the JSON file
 with open(json_file + '.json', 'r') as f:
     data = json.load(f)
@@ -95,6 +96,7 @@ while year <= simulation_end_date:
 
     # Subtract the estimated taxes from the gross income
     net_income = gross_income - estimated_federal_taxes - estimated_state_taxes - df_expenditure.loc[df_expenditure['name'] == 'pre-tax expenses', 'annual_cost'].values[0] - tdt_contribution
+    #net_income = gross_income - estimated_federal_taxes - estimated_state_taxes - np.array(df_expenditure.loc[df_expenditure['name'] == 'pre-tax expenses', 'annual_cost'])[0] - tdt_contribution
     #print('Net Income:', net_income)
 
     #store income and taxes
@@ -276,7 +278,13 @@ while year <= simulation_end_date:
                         shortage -= df_accounts.loc[account_investment_indices[i], 'amount']
 
                     
-
+    #At the end of the year, sweep all cash over $100k into the 1st investment account
+    #This is for the bozos who keep too much cash in their accounts
+    if df_accounts.loc[cash_index, 'amount'] > 100000:
+        account_investment_indices = df_accounts[df_accounts['type'] == 'Investment'].index
+        df_accounts.loc[account_investment_indices[0], 'amount'] += df_accounts.loc[cash_index, 'amount'] - 100000
+        df_accounts.loc[cash_index, 'amount'] = 100000
+                
 
     #INFLATION ADJUSTMENTS FOR ALL VALUES
     # Update the accounts
