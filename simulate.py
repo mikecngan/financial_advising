@@ -10,10 +10,10 @@ import numpy as np
 sns.set_style("whitegrid")
 
 #tax-deferred contribution limit (aka 401k contribution limits)
-tdt_contribution_limit = 11700
+tdt_contribution_limit = 23000 #this is normally 23000 but can be lowered if contributions are lower
 cost_of_college = 42162
 
-json_file = 'katelou'
+json_file = 'mike'
 # Read the JSON file
 with open(json_file + '.json', 'r') as f:
     data = json.load(f)
@@ -241,28 +241,29 @@ while year <= simulation_end_date:
                 
                 shortage -= total_investment_amount #this is how much we still need
 
-                if shortage > df_accounts.loc[account_tax_exempt_index, 'amount']: #if there isn't enough in the tax-exempt account either
-                    df_accounts.loc[account_tax_exempt_index, 'amount'] = 0 #empty the tax-exempt account
-                    shortage -= df_accounts.loc[account_tax_exempt_index, 'amount'] #this is how much we still need
+                if shortage > df_accounts.loc[account_tax_deferred_index, 'amount']: #if there isn't enough in the tax-deferred account either
+                    df_accounts.loc[account_tax_deferred_index, 'amount'] = 0 #empty the tax-exempt account
+                    income_from_retirement_accounts = df_accounts.loc[account_tax_deferred_index, 'amount'] #pay taxes on this
+
+                    shortage -= df_accounts.loc[account_tax_deferred_index, 'amount'] #this is how much we still need
                     if df_family['age'].max() < 59.5: #if the oldest family member is younger than 59.5, then there is a 10% penalty
-                        withdraw_penalty = df_accounts.loc[account_tax_exempt_index, 'amount'] * 0.1
+                        withdraw_penalty = df_accounts.loc[account_tax_deferred_index, 'amount'] * 0.1
                     
-                    if shortage > df_accounts.loc[account_tax_deferred_index, 'amount']: #if there isn't enough in the tax-deferred account either
+                    #account_tax_exempt_index
+                    if shortage > df_accounts.loc[account_tax_exempt_index, 'amount']: #if there isn't enough in the tax-exempt account either
                         print("Not enough funds to cover the shortage. You are fucked.")
-                        if df_accounts.loc[account_tax_deferred_index, 'amount'] > 0: #spend what you got left
-                            income_from_retirement_accounts = df_accounts.loc[account_tax_deferred_index, 'amount']
-                        df_accounts.loc[account_tax_deferred_index, 'amount'] -= shortage
+                        df_accounts.loc[account_tax_exempt_index, 'amount'] -= shortage
                     else:
-                        income_from_retirement_accounts = shortage
                         if df_family['age'].max() < 59.5:
                             withdraw_penalty = shortage * 0.1
-                        df_accounts.loc[account_tax_deferred_index, 'amount'] -= shortage
+                        df_accounts.loc[account_tax_exempt_index, 'amount'] -= shortage
 
                 else:
                     #if oldest family member is younger than 59.5, then there is a 10% penalty
                     if df_family['age'].max() < 59.5:
                         withdraw_penalty = shortage * 0.1
-                    df_accounts.loc[account_tax_exempt_index, 'amount'] -= shortage
+                    income_from_retirement_accounts = shortage #pay taxes
+                    df_accounts.loc[account_tax_deferred_index, 'amount'] -= shortage
 
             else: #there is enough in the combined investment account
                 for i in range(len(account_investment_indices)):
@@ -298,10 +299,12 @@ while year <= simulation_end_date:
     for idx, row in df_income.iterrows():
         family_member_age = df_family.loc[df_family['name'] == row['family_member'], 'age'].values[0]
         if ((family_member_age >= row['start_age']) or pd.isnull(row['start_age'])) and ((family_member_age <= row['end_age']) or pd.isnull(row['end_age'])):
+            df_income['income'] = df_income['income'].astype('float64')
             df_income.loc[idx, 'income'] = row['income'] * (1 + row['annual_income_growth'])
 
     # Update the expenditure
     for i in range(len(df_expenditure)):
+        df_expenditure['annual_cost'] = df_expenditure['annual_cost'].astype('float64')
         df_expenditure.loc[i, 'annual_cost'] = df_expenditure.loc[i, 'annual_cost'] * (1 + df_expenditure.loc[i, 'inflation_rate'])
     
     # Age all family members
@@ -375,6 +378,6 @@ df_taxes.set_index('year', inplace=True)
 df_merged = df_merged.merge(df_taxes, left_index=True, right_index=True, how='outer')
 
 # Print the merged DataFrame
-df_merged = df_merged.fillna(0).applymap(lambda x: '${:,.2f}'.format(x) if x != 0 else '$0.00')
+df_merged = df_merged.fillna(0).map(lambda x: '${:,.2f}'.format(x) if x != 0 else '$0.00')
 #print(df_merged)
 df_merged.to_csv(json_file + '_expense_history.csv')
