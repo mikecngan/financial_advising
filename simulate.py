@@ -10,10 +10,10 @@ import numpy as np
 sns.set_style("whitegrid")
 
 #tax-deferred contribution limit (aka 401k contribution limits)
-tdt_contribution_limit = 23000 #this is normally 23000 but can be lowered if contributions are lower
+tdt_contribution_limit = 11700 #this is normally 23000 but can be lowered if contributions are lower
 cost_of_college = 42162
 
-json_file = 'mike'
+json_file = 'katelou'
 # Read the JSON file
 with open(json_file + '.json', 'r') as f:
     data = json.load(f)
@@ -79,23 +79,25 @@ while year <= simulation_end_date:
     # Calculate the gross income
     gross_income = 0
     tdt_contribution = 0
+    tdt_contributions = 0
     for idx, row in df_income.iterrows():
         if row['name'] != 'Rent': #this is complicated but deprication will likely cancel out all rent income for tax purposes
             family_member_age = df_family.loc[df_family['name'] == row['family_member'], 'age'].values[0]
             if ((family_member_age >= row['start_age']) or pd.isnull(row['start_age'])) and ((family_member_age <= row['end_age']) or pd.isnull(row['end_age'])):
                 gross_income += row['income']
                 #if row['401-k_matching'] is not nan, then calculate the 401k contribution
-                if not pd.isnull(row['401-k_matching']):
+                if not pd.isnull(row['401-k_matching']) and row['401-k_matching'] > 0:
+                    tdt_contributions += 1 #if there's no matching is there a point?
                     tdt_contribution = tdt_contribution_limit + (row['income'] * row['401-k_matching'])
     #print('Gross Income:', gross_income)
     #print('tdt_contribution:', tdt_contribution)
 
     # Calculate the estimated federal and state taxes
-    estimated_federal_taxes = estimate_federal_taxes(gross_income + income_from_retirement_accounts + withdraw_penalty + interest, year, inflation_rate, num_children) + (cap_gains * 0.15)
-    estimated_state_taxes = estimate_state_taxes(gross_income + income_from_retirement_accounts + withdraw_penalty + interest + cap_gains, 0.0495)
+    estimated_federal_taxes = estimate_federal_taxes(gross_income + income_from_retirement_accounts + withdraw_penalty + interest - (tdt_contribution_limit * tdt_contributions), year, inflation_rate, num_children) + (cap_gains * 0.15)
+    estimated_state_taxes = estimate_state_taxes(gross_income + income_from_retirement_accounts + withdraw_penalty + interest + cap_gains - (tdt_contribution_limit * tdt_contributions), 0.0495)
 
     # Subtract the estimated taxes from the gross income
-    net_income = gross_income - estimated_federal_taxes - estimated_state_taxes - df_expenditure.loc[df_expenditure['name'] == 'pre-tax expenses', 'annual_cost'].values[0] - tdt_contribution
+    net_income = gross_income - estimated_federal_taxes - estimated_state_taxes - df_expenditure.loc[df_expenditure['name'] == 'pre-tax expenses', 'annual_cost'].values[0] - tdt_contribution_limit
     #net_income = gross_income - estimated_federal_taxes - estimated_state_taxes - np.array(df_expenditure.loc[df_expenditure['name'] == 'pre-tax expenses', 'annual_cost'])[0] - tdt_contribution
     #print('Net Income:', net_income)
 
@@ -155,11 +157,12 @@ while year <= simulation_end_date:
     if 'Tax-Deferred' in df_accounts['type'].values:
         tdt_index = df_accounts[df_accounts['type'] == 'Tax-Deferred'].index[0]
     else:
-        print("No 'Tax-Deferred' account found in df_accounts.")
+        print("No 'Tax-Deferred' account found in df_accounts. Please add into json with 0 amount")
         tdt_index = None
 
     # Subtract the contribution amount from the cash account and add it to the Tax-Deferred account
     df_accounts.loc[tdt_index, 'amount'] += tdt_contribution
+    #cash is already subtracted from net_income because it comes out of tax exempt income
 
     # Increase the contribution amount by the inflation rate
     tdt_contribution_limit *= (1 + inflation_rate)
