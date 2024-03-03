@@ -10,10 +10,10 @@ import numpy as np
 sns.set_style("whitegrid")
 
 #tax-deferred contribution limit (aka 401k contribution limits)
-tdt_contribution_limit = 11700 #this is normally 23000 but can be lowered if contributions are lower
+tdt_contribution_limit = 23000 #this is normally 23000 but can be lowered if contributions are lower
 cost_of_college = 42162
 
-json_file = 'katelou'
+json_file = 'test_human'
 # Read the JSON file
 with open(json_file + '.json', 'r') as f:
     data = json.load(f)

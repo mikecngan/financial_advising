@@ -106,7 +106,7 @@
         {
             "name": "Job",
             "family_member": "Mike",
-            "income": 200000,
+            "income": 250000,
             "annual_income_growth": 0.03,
             "end_age": 50,
             "401-k_matching": 0.035
